@@ -3,7 +3,6 @@ import random
 
 MIN_NUM = 1                 # 맞혀야 하는 숫자의 범위 (MIN_NUM ~ MAX_NUM)
 MAX_NUM = 100
-MAX_TRIES = 7               # 이 횟수 안에 못 맞히면 GAME OVER
 PROMPT = "  > "             # 사용자 입력 칸 표시 (모든 화면에서 동일)
 
 WIDTH = 62                  # 화면 가운데 정렬의 기준이 되는 폭
@@ -100,14 +99,21 @@ def hint(guess, answer):
     return "정답!"
 
 
-def show_status(used, low, high):
-    # 화면 맨 위에 항상 보이는 표시줄: 남은 기회는 ♥, 쓴 기회는 ♡, 그리고 정답이 있을 수 있는 범위
-    left = MAX_TRIES - used
+def best_tries():
+    # 가운데 숫자만 부르면 최대 몇 번이면 반드시 맞힐 수 있을까? (범위를 절반씩 줄여 가며 센다)
+    size = MAX_NUM - MIN_NUM + 1
+    count = 0
+    while size >= 1:
+        size = size // 2
+        count = count + 1
+    return count
+
+
+def show_status(used):
+    # 화면 맨 위에 항상 보이는 표시줄: 입력한 횟수(적을수록 좋다)
     print()
     print(LINE)
-    center("기회   " + "♥" * left + "♡" * used + "   (" + str(left) + "번 남음)")
-    print()
-    center("정답은  " + str(low) + " ~ " + str(high) + "  사이")
+    center("시도 횟수  " + str(used) + "번")
     print(LINE)
 
 
@@ -130,7 +136,7 @@ def intro():
         "▶ 숫자를 입력하고 Enter를 누르면 힌트가 나옵니다.",
         "▶ UP ▲ : 정답이 입력한 숫자보다 큽니다.",
         "▶ DOWN ▼ : 정답이 입력한 숫자보다 작습니다.",
-        "▶ " + str(MAX_TRIES) + "번 안에 맞히면 승리!",
+        "▶ 목표: 가능한 적은 시도로 맞히세요! (현명하게 부르면 최대 " + str(best_tries()) + "번)",
     ])
     print()
     print(LINE)
@@ -143,14 +149,12 @@ def intro():
 def play():
     answer = random.randint(MIN_NUM, MAX_NUM)    # MIN_NUM 이상 MAX_NUM 이하의 정수 하나
     history = []        # 지금까지의 도전 기록: [입력한 숫자, 힌트 글자]
-    low = MIN_NUM       # 정답이 있을 수 있는 가장 작은 수
-    high = MAX_NUM      # 정답이 있을 수 있는 가장 큰 수
     message = ""        # 잘못 입력했을 때 보여줄 안내 글
     solved = False
 
-    while len(history) < MAX_TRIES and not solved:
+    while not solved:
         clear()
-        show_status(len(history), low, high)
+        show_status(len(history))
         print()
         show_history(history)
         if len(history) == 0:
@@ -168,23 +172,15 @@ def play():
             history.append([guess, hint(guess, answer)])
             if guess == answer:
                 solved = True
-            elif guess < answer and guess + 1 > low:
-                low = guess + 1      # 정답은 guess보다 크다
-            elif guess > answer and guess - 1 < high:
-                high = guess - 1     # 정답은 guess보다 작다
 
     # 결과 화면
     clear()
-    show_status(len(history), low, high)
+    show_status(len(history))
     print()
     show_history(history)
     print()
-    if solved:
-        center("★ CLEAR! ★")
-        center(str(len(history)) + "번 만에 맞혔습니다!")
-    else:
-        center("GAME OVER")
-        center("정답은 " + str(answer) + " 였습니다.")
+    center("★ CLEAR! ★")
+    center(str(len(history)) + "번 만에 맞혔습니다!")
     print()
     center("Enter를 누르면 메인 화면으로 돌아갑니다.")
     print()
